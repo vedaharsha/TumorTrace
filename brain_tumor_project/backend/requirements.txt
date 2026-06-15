@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 python-multipart
 
-tensorflow
+tensorflow==2.19.0
 numpy
 opencv-python
 pillow
