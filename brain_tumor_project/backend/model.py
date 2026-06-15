@@ -6,7 +6,10 @@ MODEL_PATH = "models/best_model.h5"
 CLASS_NAMES = ["glioma", "meningioma", "pituitary", "no_tumor"]
 
 # Load model ONCE
-model = tf.keras.models.load_model(MODEL_PATH)
+model = tf.keras.models.load_model(
+    MODEL_PATH,
+    compile=False
+)
 
 def predict_tumor(img_array):
     """
