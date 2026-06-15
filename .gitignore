@@ -1,5 +1,6 @@
 # Python
-__pycache__/
+
+**pycache**/
 *.pyc
 *.pyo
 *.pyd
@@ -7,20 +8,37 @@ venv/
 .venv/
 
 # Node
+
 node_modules/
 npm-debug.log*
 yarn-error.log*
 
-# ML models
-*.h5
-*.pt
-*.pth
-*.onnx
-
 # IDE
+
 .vscode/
 .idea/
 
 # OS
+
 .DS_Store
 Thumbs.db
+
+# Environment Variables
+
+.env
+
+# Generated Reports & Images
+
+brain_tumor_project/backend/static/reports/
+brain_tumor_project/backend/static/uploads/
+brain_tumor_project/backend/static/gradcam/
+brain_tumor_project/backend/static/charts/
+brain_tumor_project/backend/static/qr/
+
+brain_tumor_project/reports/
+
+# Optional test files
+
+brain_tumor_project/backend/test_mail.py
+brain_tumor_project/backend/test_gemini.py
+brain_tumor_project/backend/list_models.py
