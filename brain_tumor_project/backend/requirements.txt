@@ -9,6 +9,7 @@ pillow
 
 matplotlib
 reportlab
+qrcode[pil]
 
 google-generativeai
 python-dotenv
