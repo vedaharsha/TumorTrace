@@ -3,12 +3,15 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Virtual Environment
 venv/
 .venv/
 
-# ML Models
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# ML models
 *.h5
 *.pt
 *.pth

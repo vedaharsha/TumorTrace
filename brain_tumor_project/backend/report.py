@@ -1,7 +1,14 @@
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Image, PageBreak,
+    Table, TableStyle
+)
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import enums
+from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import cm
 from datetime import datetime
+import qrcode
 import os
 
 def create_pdf(
@@ -12,70 +19,110 @@ def create_pdf(
     tumor_type,
     confidence,
     probabilities,
+    original_mri_path,
     gradcam_path,
+    probability_chart_path,
     ai_summary
 ):
-    path = f"static/reports/{report_id}.pdf"
-    c = canvas.Canvas(path, pagesize=A4)
+    os.makedirs("static/reports", exist_ok=True)
+    os.makedirs("static/qr", exist_ok=True)
 
-    width, height = A4
+    pdf_path = f"static/reports/{report_id}.pdf"
+    qr_path = f"static/qr/{report_id}.png"
 
-    # Title
-    c.setFont("Helvetica-Bold", 20)
-    c.drawCentredString(width / 2, height - 2 * cm, "AI Brain Tumor Report")
+    qr = qrcode.make(report_id)
+    qr.save(qr_path)
 
-    # Patient Info
-    c.setFont("Helvetica", 12)
-    y = height - 4 * cm
-    c.drawString(2 * cm, y, f"Patient Name: {patient_name}")
-    c.drawString(2 * cm, y - 1 * cm, f"Age: {patient_age}")
-    c.drawString(2 * cm, y - 2 * cm, f"Email: {patient_email}")
-    c.drawString(2 * cm, y - 3 * cm, f"Generated On: {datetime.now()}")
+    doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
 
-    # Result
-    y -= 5 * cm
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(2 * cm, y, "Diagnosis")
+    title = Paragraph(
+        "<b>AI BRAIN TUMOR DETECTION CENTER</b>",
+        styles["Title"]
+    )
+    story.append(title)
+    story.append(Spacer(1, 12))
 
-    c.setFont("Helvetica", 12)
-    c.drawString(2 * cm, y - 1 * cm, f"Tumor Type: {tumor_type}")
-    c.drawString(2 * cm, y - 2 * cm, f"Confidence: {confidence}%")
+    story.append(Paragraph(f"<b>Report ID:</b> {report_id}", styles["Normal"]))
+    story.append(Paragraph(f"<b>Date:</b> {datetime.now()}", styles["Normal"]))
+    story.append(Spacer(1, 10))
 
-    # Probabilities
-    y -= 4 * cm
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(2 * cm, y, "Class Probabilities")
+    if os.path.exists(qr_path):
+        story.append(Image(qr_path, width=1.2*inch, height=1.2*inch))
 
-    c.setFont("Helvetica", 12)
-    offset = 1
+    patient_table = Table([
+        ["Patient Name", patient_name],
+        ["Age", patient_age],
+        ["Email", patient_email],
+        ["Tumor Type", tumor_type],
+        ["Confidence", f"{confidence:.2f}%"]
+    ], colWidths=[150, 300])
+
+    patient_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 1, colors.black),
+        ('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
+    ]))
+
+    story.append(patient_table)
+    story.append(Spacer(1, 15))
+
+    story.append(Paragraph("<b>AI SUMMARY</b>", styles["Heading2"]))
+    story.append(Paragraph(ai_summary, styles["BodyText"]))
+    story.append(Spacer(1, 15))
+
+    prob_data = [["Class", "Probability (%)"]]
     for k, v in probabilities.items():
-        c.drawString(2 * cm, y - offset * cm, f"{k}: {v}%")
-        offset += 1
+        prob_data.append([k, str(v)])
 
-    # AI Summary
-    y -= (offset + 1) * cm
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(2 * cm, y, "AI Summary")
+    prob_table = Table(prob_data, colWidths=[200, 200])
+    prob_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 1, colors.black),
+        ('BACKGROUND', (0,0), (-1,0), colors.lightblue),
+    ]))
 
-    c.setFont("Helvetica", 12)
-    text = c.beginText(2 * cm, y - 1 * cm)
-    for line in ai_summary.split(". "):
-        text.textLine(line.strip())
-    c.drawText(text)
+    story.append(Paragraph("<b>Probability Distribution</b>", styles["Heading2"]))
+    story.append(prob_table)
 
-    # GradCAM Image
+    if os.path.exists(probability_chart_path):
+        story.append(Spacer(1, 15))
+        story.append(Image(probability_chart_path, width=4.5*inch, height=3*inch))
+
+    story.append(PageBreak())
+
+    story.append(Paragraph("<b>Original MRI Scan</b>", styles["Heading1"]))
+    if os.path.exists(original_mri_path):
+        story.append(Image(original_mri_path, width=5*inch, height=4*inch))
+
+    story.append(Spacer(1, 15))
+
+    story.append(Paragraph("<b>Grad-CAM Visualization</b>", styles["Heading1"]))
     if os.path.exists(gradcam_path):
-        c.showPage()
-        c.setFont("Helvetica-Bold", 16)
-        c.drawCentredString(width / 2, height - 2 * cm, "Grad-CAM Visualization")
-        c.drawImage(
-            gradcam_path,
-            2 * cm,
-            height / 2 - 6 * cm,
-            width - 4 * cm,
-            10 * cm,
-            preserveAspectRatio=True
-        )
+        story.append(Image(gradcam_path, width=5*inch, height=4*inch))
 
-    c.save()
-    return path
+    story.append(PageBreak())
+
+    story.append(Paragraph("<b>Clinical Recommendation</b>", styles["Heading2"]))
+
+    recommendation = f"""
+    Based on the AI analysis, the predicted class is <b>{tumor_type}</b>.
+    Further consultation with a neurologist/radiologist is recommended.
+    Clinical correlation and additional investigations may be required.
+    """
+    story.append(Paragraph(recommendation, styles["BodyText"]))
+
+    story.append(Spacer(1, 20))
+
+    disclaimer = """
+    <b>Disclaimer:</b><br/>
+    This report is generated by an Artificial Intelligence system and is intended
+    only for decision support. Final diagnosis should always be confirmed by a
+    qualified healthcare professional.
+    """
+    story.append(Paragraph(disclaimer, styles["BodyText"]))
+
+    story.append(Spacer(1, 30))
+    story.append(Paragraph("Generated by AI Brain Tumor Detection Center", styles["Italic"]))
+
+    doc.build(story)
+    return pdf_path
