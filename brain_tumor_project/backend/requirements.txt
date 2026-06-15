@@ -11,7 +11,7 @@ matplotlib
 reportlab
 qrcode[pil]
 
-google-generativeai
+google-genai
 python-dotenv
 
 aiofiles

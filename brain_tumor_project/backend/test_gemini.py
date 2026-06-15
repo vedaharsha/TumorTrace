@@ -1,17 +1,19 @@
-import google.generativeai as genai
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from google import genai
 
 load_dotenv()
 
-genai.configure(
-    api_key=os.getenv("GEMINI_API_KEY")
-)
+API_KEY = os.getenv("GEMINI_API_KEY")
 
-model = genai.GenerativeModel("gemini-2.5-flash")
+print("KEY LENGTH:", len(API_KEY))
+print("KEY START:", API_KEY[:15])
 
-response = model.generate_content(
-    "What is a brain tumor?"
+client = genai.Client(api_key=API_KEY)
+
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents="Say hello"
 )
 
 print(response.text)

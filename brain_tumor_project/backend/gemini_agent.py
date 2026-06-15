@@ -1,6 +1,6 @@
-import os
+from google import genai
 from dotenv import load_dotenv
-import google.generativeai as genai
+import os
 
 load_dotenv()
 
@@ -11,10 +11,9 @@ print("KEY FOUND:", GEMINI_API_KEY is not None)
 print("KEY PREFIX:", GEMINI_API_KEY[:10] if GEMINI_API_KEY else "NOT FOUND")
 print("===================================")
 
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = genai.Client(
+    api_key=GEMINI_API_KEY
+)
 
 
 def generate_medical_summary(tumor_type, confidence):
@@ -28,6 +27,7 @@ Tumor Type: {tumor_type}
 Confidence: {confidence}%
 
 Generate:
+
 1. Tumor explanation
 2. Possible symptoms
 3. Clinical recommendations
@@ -37,7 +37,10 @@ Keep response under 250 words.
 Do not claim a final diagnosis.
 """
 
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
 
         return response.text
 
@@ -71,7 +74,10 @@ Provide a simple educational answer.
 Do not provide medical diagnosis.
 """
 
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
 
         return response.text
 
